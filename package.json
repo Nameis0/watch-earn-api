@@ -1,11 +1,11 @@
 {
   "name": "watch-earn-api",
   "version": "1.0.0",
-  "description": "Backend API for Watch and Earn",
+  "description": "Watch and Earn Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "npm rebuild sqlite3"
+    "build": "npm install --build-from-source"
   },
   "engines": {
     "node": "20.x"
