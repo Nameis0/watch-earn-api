@@ -1,18 +1,14 @@
 {
   "name": "watch-earn-api",
   "version": "1.0.0",
-  "description": "Watch and Earn Backend API",
+  "description": "Watch and Earn API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "npm install --build-from-source"
-  },
-  "engines": {
-    "node": "20.x"
+    "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "sqlite3": "^5.1.7"
+    "lowdb": "^1.0.0"
   }
 }
