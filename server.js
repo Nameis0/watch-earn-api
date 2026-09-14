@@ -14,8 +14,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// Wheel slices clockwise starting from top (0 deg) matching frontend canvas:
-// [100, 20, 100, 50, 10, 100, 30, 5]
+// Wheel slices clockwise: [100, 20, 100, 50, 10, 100, 30, 5]
 const WHEEL_SECTORS = [100, 20, 100, 50, 10, 100, 30, 5];
 
 app.get('/', (req, res) => {
@@ -32,7 +31,7 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ success: false, message: 'Please enter mobile number' });
   }
 
-  // Device-Lock Check
+  // Device-Lock Check: 1 Phone = 1 Account
   let deviceMap = db.get('devices').value() || {};
   if (deviceMap[devId] && deviceMap[devId] !== userPhone) {
     return res.status(403).json({
@@ -43,12 +42,16 @@ app.post('/api/login', (req, res) => {
 
   let user = db.get('users').find({ id: userPhone }).value();
   if (!user) {
+    // Testing admin account ki 20,000, migatha kotha users andariki 100 coins & 5 spins
+    const initialCoins = (userPhone === '7893988980') ? 20000 : 100;
+    const initialSpins = (userPhone === '7893988980') ? 50 : 5;
+
     user = {
       id: userPhone,
       identifier: userPhone,
-      coins: 20000,
-      balance: 20000,
-      spins: 50,
+      coins: initialCoins,
+      balance: initialCoins,
+      spins: initialSpins,
       payout_address: '',
       deviceId: devId,
       adsWatched: 0,
@@ -82,7 +85,7 @@ app.post('/api/spin', (req, res) => {
     return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  let currentSpins = user.value().spins ?? 50;
+  let currentSpins = user.value().spins ?? 5;
   if (currentSpins <= 0) {
     return res.json({ success: false, message: 'No spins left! Refill required.' });
   }
@@ -111,7 +114,7 @@ app.post('/api/spin', (req, res) => {
   });
 });
 
-// One-Time Tasks with Permanent Duplicate Guard
+// One-Time Tasks
 app.post('/api/task/claim', (req, res) => {
   const { identifier, userId, coins, taskName } = req.body;
   const id = String(identifier || userId);
