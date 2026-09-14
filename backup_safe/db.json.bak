@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "id": "7893988980",
+      "identifier": "7893988980",
+      "coins": 20000,
+      "balance": 20000,
+      "spins": 50,
+      "payout_address": "",
+      "adsWatched": 0,
+      "claimedTasks": []
+    }
+  ],
+  "withdrawals": [],
+  "tasks": [],
+  "devices": {}
+}

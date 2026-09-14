@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://quge5.com/88/tag.min.js" data-zone="280422" async data-cfasync="false"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Watch&Earn Pro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
+    body { background:#070a12; color:#fff; min-height:100vh; padding-bottom:76px; overflow-x:hidden; }
+
+    /* TOP BAR */
+    .top-bar { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#0b111c; border-bottom:1px solid #1e293b; position:sticky; top:0; z-index:90; }
+    .brand { display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px; color:#facc15; }
+    .brand-sub { font-size:9px; color:#94a3b8; font-weight:500; display:block; }
+    .top-icons { display:flex; align-items:center; gap:14px; font-size:16px; color:#94a3b8; }
+
+    /* LAYOUT & SCREENS */
+    .screen { display:none; padding:16px; max-width:480px; margin:0 auto; animation:fadeIn 0.2s ease-out; }
+    .screen.active { display:block; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+    /* WALLET & CARDS */
+    .wallet-card { background:linear-gradient(135deg, #131d2e, #0e1624); border:1px solid #eab30833; border-radius:18px; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+    .wallet-val { font-size:26px; font-weight:900; color:#fff; display:flex; align-items:center; gap:6px; margin:2px 0; }
+    .wallet-sub { font-size:10px; color:#94a3b8; }
+
+    .btn-gold { background:linear-gradient(135deg, #facc15, #eab308); color:#000; border:none; border-radius:12px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+    .btn-gold:active { transform:scale(0.97); }
+
+    .hero-banner { background:linear-gradient(135deg, #182338, #101827); border-radius:18px; border:1px solid #facc1544; padding:16px; margin-bottom:16px; }
+    .hero-banner h3 { font-size:16px; font-weight:800; color:#fff; }
+    .hero-banner p { font-size:11px; color:#94a3b8; margin:4px 0 12px; }
+
+    /* SECTION HEADINGS */
+    .sec-head { display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px; }
+    .sec-title { font-size:13px; font-weight:800; color:#f8fafc; }
+    .sec-link { font-size:11px; color:#facc15; font-weight:700; cursor:pointer; }
+
+    /* QUICK ACTIONS */
+    .quick-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px; }
+    .quick-item { background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:12px 6px; text-align:center; cursor:pointer; }
+    .quick-icon { width:38px; height:38px; border-radius:10px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+    .quick-title { font-size:10px; font-weight:700; color:#e2e8f0; }
+    .quick-sub { font-size:8px; color:#64748b; margin-top:1px; }
+
+    /* TASKS & LISTS */
+    .task-card { background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .task-badge { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+
+    /* GAMES 2-COL GRID */
+    .games-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .game-card { background:#0f172a; border:1px solid #1e293b; border-radius:16px; overflow:hidden; cursor:pointer; }
+    .game-cover { width:100%; height:110px; object-fit:cover; display:block; }
+    .game-info { padding:10px; }
+    .game-title { font-size:12px; font-weight:800; color:#fff; }
+    .game-coins { font-size:10px; color:#facc15; font-weight:700; margin-top:2px; }
+
+    /* VIDEO LIST */
+    .video-card { background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:10px; display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .video-thumb { width:70px; height:50px; border-radius:8px; object-fit:cover; }
+
+    /* PILLS & BUTTONS */
+    .tab-pills { display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; }
+    .pill { padding:8px 16px; border-radius:20px; font-size:11px; font-weight:700; background:#0f172a; border:1px solid #1e293b; color:#94a3b8; cursor:pointer; white-space:nowrap; }
+    .pill.active { background:#facc15; color:#000; border-color:#facc15; }
+
+    /* BOTTOM NAVIGATION */
+    .bottom-nav { position:fixed; bottom:0; left:0; right:0; height:64px; background:#0b111c; border-top:1px solid #1e293b; display:flex; justify-content:space-around; align-items:center; z-index:90; }
+    .nav-btn { background:none; border:none; color:#64748b; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; cursor:pointer; width:20%; font-weight:700; }
+    .nav-btn i { font-size:18px; }
+    .nav-btn.active { color:#facc15; }
+
+    /* TOAST & MODAL */
+    #modernToast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#0f172a; border:1px solid #facc15; border-radius:12px; padding:10px 18px; font-size:12px; z-index:9999; display:none; align-items:center; gap:8px; box-shadow:0 8px 24px rgba(0,0,0,0.8); }
+    #modernToast.show { display:flex; }
+    .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    .modal-card { background:#111726; border:1px solid #facc1544; border-radius:18px; padding:22px; width:100%; max-width:330px; text-align:center; }
+    .input-box { width:100%; background:#070a12; border:1px solid #1e293b; border-radius:10px; padding:12px; color:#fff; font-size:13px; margin:10px 0 16px; outline:none; }
+  </style>
+
+<script>
+  let navHistory = ["home"];
+
+  function handleBackNavigation(e) {
+    const vignette = document.getElementById("vignetteModal");
+    if (vignette && vignette.style.display === "flex") {
+      vignette.style.display = "none";
+      if (window.adTimerInterval) clearInterval(window.adTimerInterval);
+      return;
+    }
+
+    if (navHistory.length > 1) {
+      navHistory.pop();
+      const prevTab = navHistory[navHistory.length - 1] || "home";
+      renderTabDirect(prevTab);
+    }
+  }
+
+  window.addEventListener("popstate", (e) => {
+    handleBackNavigation(e);
+    history.pushState({ app: "watch-earn" }, "");
+  });
+
+  window.addEventListener("DOMContentLoaded", () => {
+    history.pushState({ app: "watch-earn" }, "");
+  });
+</script>
+
+
+<style>
+.sponsored-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 18px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0d1117;
+  font-weight: 800;
+  font-size: 15px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+  margin: 10px 0;
+}
+.sponsored-btn .btn-badge {
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.timer-box {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px dashed #f59e0b;
+  color: #f59e0b;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 10px 0;
+  text-align: center;
+}
+</style>
+
+</head>
+<body>
+
+  <div id="modernToast">
+    <span id="toastIcon">🪙</span>
+    <span id="toastMsg">Action</span>
+  </div>
+
+  <div class="top-bar">
+    <div class="brand">
+      <i class="fa-solid fa-play-circle"></i>
+      <div>
+        <span>Watch&Earn</span>
+        <span class="brand-sub">Watch • Play • Earn</span>
+      </div>
+    </div>
+    <div class="top-icons">
+      <i class="fa-solid fa-bell" onclick="notify('No unread messages', 'info')"></i>
+      <i class="fa-solid fa-circle-user" onclick="navigate('profile')"></i>
+    </div>
+  </div>
+
+    <!-- 1. HOME SCREEN -->
+  <div id="view-home" class="screen active">
+    <div class="wallet-card" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div>
+          <div class="wallet-sub">Your Balance</div>
+          <div class="wallet-val"><span style="color:#facc15;">🪙</span> <span class="sync-coins">0</span></div>
+          <div class="wallet-sub" id="homeUserLabel">User: ...</div>
+        </div>
+        <button type="button" onclick="openRedeemModal()" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #f59e0b; font-weight: 700; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 13px;">Redeem &gt;</button>
+      </div>
+
+      <div style="width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+        <button id="watchVideoBtn" type="button" onclick="startVideoTask()" style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 12px; padding: 12px 16px; color: #0f172a; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>▶</span> Watch Sponsored Ad
+          </span>
+          <span style="background: rgba(15, 23, 42, 0.25); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 12px;">+5 Coins</span>
+        </button>
+        <div id="videoTimer" class="timer-box" style="display: none; text-align: center; color: #f59e0b; font-size: 13px; margin-top: 10px; font-weight: bold;">
+          ⏳ వేచి ఉండండి: <span id="secondsLeft">30</span>s
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">Quick Actions</div>
+      <div class="sec-link" onclick="navigate('videos')">Videos &gt;</div>
+    </div>
+    <div class="quick-grid">
+      <div class="quick-item" onclick="navigate('videos')">
+        <div class="quick-icon" style="background:#0284c722; color:#38bdf8;"><i class="fa-solid fa-play"></i></div>
+        <div class="quick-title">Watch Videos</div>
+        <div class="quick-sub">Earn Coins</div>
+      </div>
+      <div class="quick-item" onclick="navigate('games')">
+        <div class="quick-icon" style="background:#22c55e22; color:#4ade80;"><i class="fa-solid fa-gamepad"></i></div>
+        <div class="quick-title">Play Games</div>
+        <div class="quick-sub">Earn Coins</div>
+      </div>
+      <div class="quick-item" onclick="navigate('spin')">
+        <div class="quick-icon" style="background:#f59e0b22; color:#fbbf24;"><i class="fa-solid fa-dharmachakra"></i></div>
+        <div class="quick-title">Spin & Win</div>
+        <div class="quick-sub">Spins: <span class="sync-spins">0</span></div>
+      </div>
+      <div class="quick-item" onclick="navigate('offers')">
+        <div class="quick-icon" style="background:#ef444422; color:#f87171;"><i class="fa-solid fa-tags"></i></div>
+        <div class="quick-title">Offers</div>
+        <div class="quick-sub">Special Tasks</div>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">Daily Missions</div>
+    </div>
+    <div class="task-card">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="task-badge" style="background:#0284c722; color:#38bdf8;"><i class="fa-brands fa-telegram"></i></div>
+        <div>
+          <div style="font-size:12px; font-weight:800;">Join Telegram Channel</div>
+          <div style="font-size:10px; color:#94a3b8;">Official community update</div>
+          <div style="font-size:11px; color:#facc15; font-weight:700; margin-top:2px;">🪙 +50 Coins</div>
+        </div>
+      </div>
+      <button class="btn-gold" style="padding:6px 14px; font-size:11px;" onclick="claimTask('tg', 50, 'https://t.me/watch_and_earn_2')">Claim</button>
+    </div>
+    <div class="task-card">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="task-badge" style="background:#ef444422; color:#f87171;"><i class="fa-brands fa-youtube"></i></div>
+        <div>
+          <div style="font-size:12px; font-weight:800;">Subscribe YouTube Channel</div>
+          <div style="font-size:10px; color:#94a3b8;">Watch channel intro</div>
+          <div style="font-size:11px; color:#facc15; font-weight:700; margin-top:2px;">🪙 +50 Coins</div>
+        </div>
+      </div>
+      <button class="btn-gold" style="padding:6px 14px; font-size:11px;" onclick="claimTask('yt', 50, 'https://youtube.com/@watch_and_earn_official?si=eaEML-IDd1sUu42J')">Claim</button>
+    </div>
+  </div>
+
+  <!-- 2. OFFERS SCREEN -->
+  <div id="view-offers" class="screen">
+    <div class="tab-pills">
+      <div class="pill active">All Offers</div>
+      <div class="pill">App Install</div>
+      <div class="pill">Survey</div>
+    </div>
+    <div class="task-card">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="task-badge" style="background:#0284c722; color:#38bdf8;"><i class="fa-solid fa-download"></i></div>
+        <div>
+          <div style="font-size:12px; font-weight:800;">Install & Open App</div>
+          <div style="font-size:10px; color:#94a3b8;">Install sponsor app and test 1 min</div>
+          <div style="font-size:11px; color:#facc15; font-weight:700; margin-top:2px;">🪙 +500</div>
+        </div>
+      </div>
+      <button class="btn-gold" style="padding:8px 16px; font-size:11px;" onclick="openMonetizedAd(10, 45, 100)">Start</button>
+    </div>
+    <div class="task-card">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="task-badge" style="background:#22c55e22; color:#4ade80;"><i class="fa-solid fa-gamepad"></i></div>
+        <div>
+          <div style="font-size:12px; font-weight:800;">Register & Play</div>
+          <div style="font-size:10px; color:#94a3b8;">Sign up on partner game portal</div>
+          <div style="font-size:11px; color:#facc15; font-weight:700; margin-top:2px;">🪙 +300</div>
+        </div>
+      </div>
+      <button class="btn-gold" style="padding:8px 16px; font-size:11px;" onclick="openMonetizedAd(11, 40, 80)">Start</button>
+    </div>
+  </div>
+
+  <!-- 3. GAMES SCREEN -->
+  <div id="view-games" class="screen">
+    <div class="hero-banner" style="text-align:center; padding:16px;">
+      <h3 style="font-size:15px;">Official Gamezop Arcade</h3>
+      <p style="margin:4px 0 12px;">Play 250+ instant web games & earn +25 Coins!</p>
+      <button class="btn-gold" style="width:100%; padding:10px;" onclick="launchGame('Arcade Portal', 'https://www.gamezop.com/?id=4042')">Play All Games (250+)</button>
+    </div>
+    <div class="sec-title" style="margin-bottom:10px;">Popular Games</div>
+    <div class="games-grid">
+      <div class="game-card" onclick="launchGame('Action Games', 'https://www.gamezop.com/g/action?id=4042')">
+        <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300&q=80" class="game-cover" alt="Game">
+        <div class="game-info">
+          <div class="game-title">Action Arcade</div>
+          <div class="game-coins">🪙 +25 per play</div>
+        </div>
+      </div>
+      <div class="game-card" onclick="launchGame('Bubble Shooter', 'https://www.gamezop.com/g/puzzle-logic?id=4042')">
+        <img src="https://images.unsplash.com/photo-1612287232074-9fbb3f2f814b?w=300&q=80" class="game-cover" alt="Game">
+        <div class="game-info">
+          <div class="game-title">Puzzle Logic</div>
+          <div class="game-coins">🪙 +25 per play</div>
+        </div>
+      </div>
+      <div class="game-card" onclick="launchGame('Sports Cricket', 'https://www.gamezop.com/g/sports-racing?id=4042')">
+        <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300&q=80" class="game-cover" alt="Game">
+        <div class="game-info">
+          <div class="game-title">Cricket & Sports</div>
+          <div class="game-coins">🪙 +25 per play</div>
+        </div>
+      </div>
+      <div class="game-card" onclick="launchGame('Adventure Runner', 'https://www.gamezop.com/g/adventure?id=4042')">
+        <img src="https://images.unsplash.com/photo-1585672840452-32b0c3f0dc7f?w=300&q=80" class="game-cover" alt="Game">
+        <div class="game-info">
+          <div class="game-title">Adventure Quest</div>
+          <div class="game-coins">🪙 +25 per play</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. VIDEOS SCREEN -->
+  <div id="view-videos" class="screen">
+    <div class="sec-head">
+      <div class="sec-title">Sponsored Video Streams</div>
+      <div class="sec-link" onclick="navigate('home')">&lt; Back</div>
+    </div>
+    <div class="video-card">
+      <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=160&q=80" class="video-thumb" alt="thumb">
+      <div style="flex:1;">
+        <div style="font-size:12px; font-weight:800;">Amazing Nature Stream</div>
+        <div style="font-size:10px; color:#94a3b8;">30s Stream • Standard CPM</div>
+        <div style="font-size:11px; color:#facc15; font-weight:700;">🪙 +20 Coins</div>
+      </div>
+      <button class="btn-gold" style="padding:6px 14px; font-size:11px;" onclick="openMonetizedAd(1, 30, 20)">Watch</button>
+    </div>
+    <div class="video-card">
+      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=160&q=80" class="video-thumb" alt="thumb">
+      <div style="flex:1;">
+        <div style="font-size:12px; font-weight:800;">Tech Gadgets Short</div>
+        <div style="font-size:10px; color:#94a3b8;">40s Stream • High Reward</div>
+        <div style="font-size:11px; color:#facc15; font-weight:700;">🪙 +30 Coins</div>
+      </div>
+      <button class="btn-gold" style="padding:6px 14px; font-size:11px;" onclick="openMonetizedAd(2, 40, 30)">Watch</button>
+    </div>
+  </div>
+
+  <!-- 5. SPIN WHEEL SCREEN -->
+  <div id="view-spin" class="screen" style="text-align:center;">
+    <h2 style="color:#facc15; font-size:20px; font-weight:900;">Spin & Win</h2>
+    <p style="font-size:11px; color:#94a3b8; margin:2px 0 14px;">Try your luck and win coins!</p>
+    <div style="position:relative; width:265px; height:265px; margin:0 auto 16px;">
+      <canvas id="wheelCanvas" width="265" height="265" style="width:265px; height:265px; border-radius:50%; border:4px solid #facc15; box-shadow:0 0 25px rgba(250,204,21,0.3);"></canvas>
+      <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:26px; color:#facc15; z-index:10;"><i class="fa-solid fa-caret-down"></i></div>
+    </div>
+    <div style="font-size:12px; color:#cbd5e1; margin-bottom:12px;">Your Spins: <span class="sync-spins" style="color:#facc15; font-weight:900;">0</span></div>
+    <button class="btn-gold" style="width:100%; max-width:280px; padding:13px; font-size:14px; margin-bottom:8px;" onclick="spinPremiumWheel()">Spin Now</button>
+    <button class="btn-gold" style="width:100%; max-width:280px; padding:10px; font-size:11px; background:#1e293b; color:#cbd5e1;" onclick="watchAdForSpin()">Watch Ad for +2 Spins</button>
+  </div>
+
+  <!-- 6. REDEEM SCREEN -->
+  <div id="view-redeem" class="screen">
+    <div class="wallet-card" style="text-align:center; display:block;">
+      <div class="wallet-sub">Your Balance</div>
+      <div class="wallet-val" style="justify-content:center;"><span style="color:#facc15;">🪙</span> <span class="sync-coins">0</span></div>
+      <div class="wallet-sub">100 Coins = ₹1.00</div>
+    </div>
+    <div class="tab-pills">
+      <div class="pill active">Paytm</div>
+      <div class="pill" onclick="notify('UPI requires Min ₹50 (5,000 Coins)', 'info')">UPI</div>
+    </div>
+    <div class="task-card">
+      <div>
+        <div style="font-size:13px; font-weight:800;">₹10 Paytm Cash</div>
+        <div style="font-size:10px; color:#94a3b8;">🪙 1,000 coins required</div>
+      </div>
+      <button class="btn-gold" style="padding:8px 18px; font-size:11px;" onclick="promptWithdraw(1000, 'Paytm ₹10')">Redeem</button>
+    </div>
+    <div class="task-card">
+      <div>
+        <div style="font-size:13px; font-weight:800;">₹25 Paytm Cash</div>
+        <div style="font-size:10px; color:#94a3b8;">🪙 2,500 coins required</div>
+      </div>
+      <button class="btn-gold" style="padding:8px 18px; font-size:11px;" onclick="promptWithdraw(2500, 'Paytm ₹25')">Redeem</button>
+    </div>
+    <div class="task-card">
+      <div>
+        <div style="font-size:13px; font-weight:800;">₹50 UPI Cash</div>
+        <div style="font-size:10px; color:#94a3b8;">🪙 5,000 coins required</div>
+      </div>
+      <button class="btn-gold" style="padding:8px 18px; font-size:11px;" onclick="promptWithdraw(5000, 'UPI ₹50')">Redeem</button>
+    </div>
+  </div>
+
+  <!-- 7. HISTORY SCREEN -->
+  <div id="view-history" class="screen">
+    <div class="sec-title" style="margin-bottom:12px;">Activity History</div>
+    <div id="historyListContainer">
+      <div class="task-card">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="task-badge" style="background:#22c55e22; color:#4ade80;"><i class="fa-solid fa-play"></i></div>
+          <div>
+            <div style="font-size:12px; font-weight:800;">Watched Video Stream</div>
+            <div style="font-size:10px; color:#94a3b8;">Ad network verification</div>
+          </div>
+        </div>
+        <div style="color:#22c55e; font-weight:800; font-size:12px;">+ 30</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. PROFILE SCREEN -->
+  <div id="view-profile" class="screen">
+    <div style="text-align:center; padding:16px 0;">
+      <div style="width:68px; height:68px; border-radius:50%; background:#1e293b; color:#facc15; font-size:32px; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; border:2px solid #facc15;">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <h3 id="profNameTitle" style="font-size:16px;">User</h3>
+      <p style="font-size:11px; color:#94a3b8;" id="profDeviceStatus">Hardware Device Locked</p>
+    </div>
+    <div class="task-card" style="cursor:pointer;" onclick="navigate('redeem')">
+      <div style="display:flex; align-items:center; gap:12px;"><i class="fa-solid fa-wallet" style="color:#facc15;"></i><span style="font-size:12px; font-weight:700;">My Wallet</span></div>
+      <i class="fa-solid fa-chevron-right" style="font-size:11px; color:#64748b;"></i>
+    </div>
+    <div class="task-card" style="cursor:pointer;" onclick="navigate('history')">
+      <div style="display:flex; align-items:center; gap:12px;"><i class="fa-solid fa-clock-rotate-left" style="color:#38bdf8;"></i><span style="font-size:12px; font-weight:700;">Redeem History</span></div>
+      <i class="fa-solid fa-chevron-right" style="font-size:11px; color:#64748b;"></i>
+    </div>
+    <div class="task-card" style="cursor:pointer;" onclick="doLogout()">
+      <div style="display:flex; align-items:center; gap:12px;"><i class="fa-solid fa-right-from-bracket" style="color:#ef4444;"></i><span style="font-size:12px; font-weight:700; color:#f87171;">Logout Device</span></div>
+      <i class="fa-solid fa-chevron-right" style="font-size:11px; color:#64748b;"></i>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV BAR -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="tab-home" onclick="navigate('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+    <button class="nav-btn" id="tab-offers" onclick="navigate('offers')"><i class="fa-solid fa-tags"></i><span>Offers</span></button>
+    <button class="nav-btn" id="tab-games" onclick="navigate('games')"><i class="fa-solid fa-gamepad"></i><span>Games</span></button>
+    <button class="nav-btn" id="tab-history" onclick="navigate('history')"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+    <button class="nav-btn" id="tab-profile" onclick="navigate('profile')"><i class="fa-solid fa-user"></i><span>Profile</span></button>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <div class="brand" style="justify-content:center; margin-bottom:8px;"><i class="fa-solid fa-play-circle"></i> Watch&Earn</div>
+      <p style="font-size:11px; color:#94a3b8;">Single Account Per Hardware (Anti-Fraud)</p>
+      <input type="text" id="loginId" class="input-box" placeholder="Mobile Number (e.g. 7893988980)">
+      <button class="btn-gold" style="width:100%; padding:12px;" onclick="doLogin()">Login / Register</button>
+    </div>
+  </div>
+
+  <!-- WITHDRAW PROMPT MODAL -->
+  <div id="withdrawModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="color:#fff; font-size:15px;" id="withdrawTargetTitle">Withdraw</h3>
+      <input type="text" id="withdrawAccountInput" class="input-box" placeholder="Paytm Number or UPI ID">
+      <div style="display:flex; gap:8px;">
+        <button class="btn-gold" style="flex:1; padding:10px; background:#1e293b; color:#fff;" onclick="closeWithdrawModal()">Cancel</button>
+        <button class="btn-gold" style="flex:1; padding:10px;" onclick="submitWithdrawalAction()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://watch-earn-api.onrender.com";
+    const REAL_AD_URL = "https://omg10.com/4/11773665";
+    let currentUser = localStorage.getItem("site_user");
+    let currentCoins = localStorage.getItem("user_permanent_coins") !== null ? Number(localStorage.getItem("user_permanent_coins")) : 20000;
+    let currentSpins = 0;
+    let pendingWithdrawCoins = 0;
+    let pendingWithdrawTitle = "";
+
+    const toast = document.getElementById("modernToast");
+    let toastTimer = null;
+    function notify(msg, type = "success") {
+      if (!toast) return;
+      document.getElementById("toastIcon").innerHTML = (type === "success") ? "🪙" : ((type === "error") ? "⚠️" : "ℹ️");
+      document.getElementById("toastMsg").innerText = msg;
+      toast.style.borderColor = (type === "success") ? "#22c55e" : ((type === "error") ? "#ef4444" : "#3b82f6");
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    function navigate(tab) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      const target = document.getElementById("view-" + tab);
+      if (target) target.classList.add("active");
+
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      const activeBtn = document.getElementById("tab-" + tab);
+      if (activeBtn) activeBtn.classList.add("active");
+
+      if (tab === "spin") setTimeout(initPremiumWheel, 50);
+      updateUI();
+    }
+
+    function updateUI() {
+      localStorage.setItem("user_permanent_coins", currentCoins);
+      document.querySelectorAll(".sync-coins").forEach(el => el.innerText = Number(currentCoins).toLocaleString());
+      document.querySelectorAll(".sync-spins").forEach(el => el.innerText = currentSpins);
+      const hUser = document.getElementById("homeUserLabel");
+      if (hUser) hUser.innerText = currentUser ? ("User: " + currentUser) : "User: ...";
+      const pUser = document.getElementById("profNameTitle");
+      if (pUser) pUser.innerText = currentUser ? ("User " + currentUser) : "Guest";
+    }
+
+    async function syncUserData() {
+      currentUser = localStorage.getItem("site_user");
+      if (!currentUser) {
+        document.getElementById("loginOverlay").style.display = "flex";
+        return;
+      }
+      document.getElementById("loginOverlay").style.display = "none";
+      updateUI();
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/user/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: currentUser })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          currentCoins = data.coins !== undefined ? data.coins : currentCoins;
+          currentSpins = data.spins !== undefined ? data.spins : currentSpins;
+          updateUI();
+        }
+      } catch(e) {
+        console.log("Server sync sleeping/reconnecting...");
+      }
+    }
+
+    async function doLogin() {
+      const input = document.getElementById("loginId");
+      const val = input ? input.value.trim() : "";
+      if (!val || val.length < 4) {
+        notify("Please enter a valid mobile number", "error");
+        return;
+      }
+      currentUser = val;
+      localStorage.setItem("site_user", currentUser);
+      await syncUserData();
+      notify("Welcome to Watch&Earn!", "success");
+      navigate("home");
+    }
+
+    function doLogout() {
+      localStorage.removeItem("site_user");
+      location.reload();
+    }
+
+    function openMonetizedAd(adId, seconds, rewardCoins) {
+      
+      let rem = seconds;
+      notify(`Stream active! Stay on sponsor page for ${rem}s to claim reward.`, "info");
+
+      const timer = setInterval(async () => {
+        rem--;
+        if (rem <= 0) {
+          clearInterval(timer);
+          try {
+            const res = await fetch(`${BACKEND_URL}/api/ad/verify`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ identifier: currentUser, coins: rewardCoins, reward: rewardCoins })
+            });
+            const d = await res.json();
+            if (d && d.success) {
+              currentCoins = d.balance || (currentCoins + rewardCoins);
+              updateUI();
+              notify(`💰 +${rewardCoins} Coins Credited!`, "success");
+            }
+          } catch(e) {
+            currentCoins += rewardCoins;
+            updateUI();
+            notify(`+${rewardCoins} Coins Credited!`, "success");
+          }
+        }
+      }, 1000);
+    }
+
+    function launchGame(name, url) {
+      
+      notify(`🎮 ${name} started! Stay 1 min for bonus.`, "info");
+      fetch(`${BACKEND_URL}/api/ad/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: currentUser, coins: 25, reward: 25 })
+      }).then(r => r.json()).then(d => {
+        if (d && d.success) {
+          currentCoins = d.balance || (currentCoins + 25);
+          updateUI();
+          notify("🎉 +25 Coins Credited for Playing!", "success");
+        }
+      }).catch(() => {});
+    }
+
+    async function claimTask(type, reward, url) {
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/task/claim`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: currentUser, taskType: type })
+        });
+        const d = await res.json();
+        if (d && d.success) {
+          currentCoins = d.balance;
+          updateUI();
+          notify(`🎉 Task Complete: +${reward} Coins!`, "success");
+        } else {
+          notify(d.message || "Task already claimed!", "error");
+        }
+      } catch(e) {
+        currentCoins += reward;
+        updateUI();
+        notify(`🎉 Task Complete: +${reward} Coins!`, "success");
+      }
+    }
+
+    function promptWithdraw(coins, title) {
+      if (currentCoins < coins) {
+        notify(`Insufficient coins! Minimum ${coins} coins required.`, "error");
+        return;
+      }
+      pendingWithdrawCoins = coins;
+      pendingWithdrawTitle = title;
+      document.getElementById("withdrawTargetTitle").innerText = "Redeem " + title;
+      document.getElementById("withdrawModal").style.display = "flex";
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById("withdrawModal").style.display = "none";
+    }
+
+    async function submitWithdrawalAction() {
+      const acc = document.getElementById("withdrawAccountInput").value.trim();
+      if (!acc) {
+        notify("Please enter valid account/VPA", "error");
+        return;
+      }
+      closeWithdrawModal();
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/withdraw/request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            identifier: currentUser,
+            coins: pendingWithdrawCoins,
+            account: acc,
+            method: pendingWithdrawTitle
+          })
+        });
+        const d = await res.json();
+        if (d && d.success) {
+          currentCoins = d.balance;
+          updateUI();
+          notify("Withdrawal request sent to Telegram! Processing within 24h.", "success");
+        } else {
+          notify(d.message || "Withdrawal failed", "error");
+        }
+      } catch(e) {
+        currentCoins -= pendingWithdrawCoins;
+        updateUI();
+        notify("Withdrawal request recorded!", "success");
+      }
+    }
+
+    function watchAdForSpin() {
+      openMonetizedAd(5, 30, 0);
+      notify("Watch 30s sponsor stream to refill +3 spins!", "info");
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/spin/refill`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier: currentUser })
+          });
+          const d = await res.json();
+          if (d && d.success) {
+            currentSpins = d.spins;
+            updateUI();
+            notify("🎉 +3 Spins Refilled successfully!", "success");
+          }
+        } catch(e) {
+          currentSpins += 3;
+          updateUI();
+        }
+      }, 15000);
+    }
+
+    // --- WHEEL MATH MATCHED EXACTLY TO SERVER SECTORS ---
+    const segs = ["100", "30", "5", "100", "20", "100", "50", "10"];
+    const cols = ["#facc15", "#0f172a", "#facc15", "#0f172a", "#facc15", "#0f172a", "#facc15", "#0f172a"];
+    let spinning = false;
+
+    function initPremiumWheel() {
+      const canvas = document.getElementById("wheelCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const num = segs.length;
+      const arc = (2 * Math.PI) / num;
+      ctx.clearRect(0, 0, 265, 265);
+
+      for (let i = 0; i < num; i++) {
+        const angle = i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = cols[i];
+        ctx.moveTo(132, 132);
+        ctx.arc(132, 132, 126, angle, angle + arc);
+        ctx.lineTo(132, 132);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(132, 132);
+        ctx.rotate(angle + arc / 2);
+        ctx.fillStyle = (cols[i] === "#facc15") ? "#000" : "#fff";
+        ctx.font = "bold 13px Inter, sans-serif";
+        ctx.fillText(segs[i], 70, 5);
+        ctx.restore();
+      }
+    }
+
+    async function spinPremiumWheel() {
+      if (spinning) return;
+      if (currentSpins <= 0) {
+        notify("No spins left! Watch ad to refill spins.", "info");
+        return;
+      }
+      spinning = true;
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/spin/play`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: currentUser })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          notify(data.message || "Spin error", "error");
+          spinning = false;
+          return;
+        }
+        currentSpins = data.spinsLeft;
+        updateUI();
+
+        const canvas = document.getElementById("wheelCanvas");
+        const targetDeg = (360 - (data.targetIndex * 45)) + 1440;
+        canvas.style.transition = "transform 4s cubic-bezier(0.15, 0.9, 0.2, 1)";
+        canvas.style.transform = `rotate(${targetDeg}deg)`;
+
+        setTimeout(() => {
+          spinning = false;
+          if (data.requires30sAd) {
+            notify("🎉 Jackpot 100! Watch 30s Ad to claim.", "info");
+            openMonetizedAd(1, 30, 100);
+          } else {
+            currentCoins = data.balance;
+            updateUI();
+            notify(`🎉 Lucky Spin: +${data.prize} Coins!`, "success");
+          }
+        }, 4100);
+      } catch(err) {
+        spinning = false;
+        notify("Spin request error, try again", "error");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      syncUserData();
+      navigate("home");
+    });
+  </script>
+
+  
+  </div>
+
+
+  <!-- Full-Screen In-App Monetag Overlay Modal -->
+  <div id="vignetteModal" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.96); z-index:99999; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#0f172a; border:1px solid #1e293b; border-radius:24px; max-width:360px; width:100%; padding:20px; text-align:center; box-shadow:0 20px 25px -5px rgba(0,0,0,0.6);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <span id="vignetteTitle" style="color:#eab308; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Sponsored Stream</span>
+        <span id="vignetteTimer" style="background:rgba(234,179,8,0.15); color:#facc15; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:800; border:1px solid rgba(234,179,8,0.3);">30s</span>
+      </div>
+      
+      <!-- Interactive Ad Banner Display Unit -->
+      <div style="width:100%; min-height:180px; background:#020617; border:1px dashed #334155; border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:14px; position:relative; overflow:hidden;">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(234,179,8,0.1); display:flex; align-items:center; justify-content:center; color:#facc15; margin-bottom:10px;">
+          <svg style="width:26px; height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <h4 style="color:#f8fafc; font-size:14px; font-weight:700; margin-bottom:4px;">Monetag Verified Impression</h4>
+        <p style="color:#64748b; font-size:11px; max-width:240px; line-height:1.4;">Active sponsor feed verified. Keep screen open to receive coins.</p>
+        <div style="margin-top:10px; padding:3px 8px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); border-radius:8px; color:#4ade80; font-size:10px; font-weight:600;">● Live Stream Active</div>
+      </div>
+
+      <p style="color:#94a3b8; font-size:11px; margin-bottom:12px;">Reward will credit automatically when progress reaches 100%</p>
+      <div style="width:100%; background:#1e293b; height:6px; border-radius:999px; overflow:hidden;">
+        <div id="vignetteProgressBar" style="width:0%; background:#eab308; height:100%; transition:width 1s linear;"></div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+
+<!-- Redeem UPI Modal -->
+<div id="redeemModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center;">
+  <div style="background:#161b22; border:1px solid #30363d; border-radius:16px; padding:20px; width:90%; max-width:340px; text-align:center; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+    <h3 style="color:#f59e0b; margin-bottom:6px; font-size:18px;">Redeem to UPI</h3>
+    <p style="font-size:12px; color:#8b949e; margin-bottom:15px;">1,000 Coins = ₹1 (Weekly Max: 3)</p>
+
+    <div style="text-align:left; margin-bottom:12px;">
+      <label style="font-size:11px; color:#8b949e; text-transform:uppercase; font-weight:bold;">UPI ID</label>
+      <input type="text" id="upiIdInput" placeholder="example@oksbi" style="width:100%; padding:10px; border-radius:8px; border:1px solid #30363d; background:#0d1117; color:#fff; margin-top:4px; font-size:14px; box-sizing:border-box;">
+    </div>
+
+    <div style="text-align:left; margin-bottom:15px;">
+      <label style="font-size:11px; color:#8b949e; text-transform:uppercase; font-weight:bold;">Amount</label>
+      <select id="redeemAmountSelect" style="width:100%; padding:10px; border-radius:8px; border:1px solid #30363d; background:#0d1117; color:#fff; margin-top:4px; font-size:14px; box-sizing:border-box;">
+        <option value="10000">₹10 (10,000 Coins)</option>
+        <option value="20000">₹20 (20,000 Coins)</option>
+        <option value="50000">₹50 (50,000 Coins)</option>
+      </select>
+    </div>
+
+    <button type="button" onclick="submitWithdrawRequest()" style="width:100%; padding:12px; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; border-radius:8px; font-weight:bold; color:#0d1117; font-size:14px; cursor:pointer; margin-bottom:8px;">Submit Request</button>
+    <button type="button" onclick="closeRedeemModal()" style="width:100%; padding:8px; background:transparent; border:none; color:#8b949e; font-size:13px; cursor:pointer;">Cancel</button>
+  </div>
+</div>
+<script src="app.js?v=3"></script>
+
+</body>
+</html>
