@@ -15,7 +15,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Wheel slices clockwise: [100, 20, 100, 50, 10, 100, 30, 5]
-const WHEEL_SECTORS = [100, 20, 100, 50, 10, 100, 30, 5];
+const WHEEL_SECTORS = [100, 30, 5, 100, 20, 100, 50, 10];
 
 app.get('/', (req, res) => {
   res.json({ status: 'API is running successfully', timestamp: new Date() });
