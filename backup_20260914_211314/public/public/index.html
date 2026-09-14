@@ -345,37 +345,17 @@
     </div>
   </div>
 
-      <!-- 5. SPIN WHEEL SCREEN -->
-  <div id="view-spin" class="screen" style="text-align:center; padding-bottom: 30px;">
-    <h2 style="background: linear-gradient(135deg, #facc15, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 4px;">LUCKY WHEEL</h2>
-    <p style="font-size: 12px; color: #94a3b8; margin: 0 0 16px;">Spin the wheel to claim exclusive crypto rewards</p>
-
-    <div style="position:relative; width: 280px; height: 280px; margin: 0 auto 18px; filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.25));">
-      <canvas id="wheelCanvas" width="280" height="280" style="width: 280px; height: 280px; border-radius: 50%;"></canvas>
-      <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 30px; color: #facc15; z-index: 15; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));">
-        <i class="fa-solid fa-location-pin"></i>
-      </div>
+  <!-- 5. SPIN WHEEL SCREEN -->
+  <div id="view-spin" class="screen" style="text-align:center;">
+    <h2 style="color:#facc15; font-size:20px; font-weight:900;">Spin & Win</h2>
+    <p style="font-size:11px; color:#94a3b8; margin:2px 0 14px;">Try your luck and win coins!</p>
+    <div style="position:relative; width:265px; height:265px; margin:0 auto 16px;">
+      <canvas id="wheelCanvas" width="265" height="265" style="width:265px; height:265px; border-radius:50%; border:4px solid #facc15; box-shadow:0 0 25px rgba(250,204,21,0.3);"></canvas>
+      <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:26px; color:#facc15; z-index:10;"><i class="fa-solid fa-caret-down"></i></div>
     </div>
-
-    <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 16px; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-      <span style="font-size: 12px; color: #94a3b8;">Available Spins:</span>
-      <span class="sync-spins" style="font-size: 16px; font-weight: 900; color: #facc15;">5</span>
-    </div>
-
-    <div style="display:flex; flex-direction:column; gap: 10px; align-items: center; width: 100%; max-width: 320px; margin: 0 auto;">
-      <button id="spinActionBtn" type="button" onclick="runCustomSpin()" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; background: linear-gradient(135deg, #facc15, #d97706); border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);">Spin Now</button>
-      <button id="spinAdBtn" type="button" onclick="watchAdForExtraSpin()" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 700; color: #38bdf8; background: rgba(15, 23, 42, 0.8); border: 1px solid #0284c7; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <i class="fa-solid fa-play"></i> Watch Sponsored Ad (+1 Spin)
-      </button>
-    </div>
-
-    <!-- Inline Dedicated Sponsor Ad Player -->
-    <div id="inlineAdPlayer" style="display: none; margin-top: 18px; background: #0f172a; border: 1px dashed #f59e0b; border-radius: 14px; padding: 16px; text-align: center;">
-      <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">SPONSORED CAMPAIGN</div>
-      <div style="font-size: 14px; font-weight: 700; color: #facc15; margin-bottom: 8px;">Completing sponsored stream...</div>
-      <div style="font-size: 20px; font-weight: 900; color: #fff;"><span id="adSecondsLeft">15</span>s</div>
-      <div style="font-size: 11px; color: #64748b; margin-top: 6px;">Reward unlocks once the counter hits 0.</div>
-    </div>
+    <div style="font-size:12px; color:#cbd5e1; margin-bottom:12px;">Your Spins: <span class="sync-spins" style="color:#facc15; font-weight:900;">0</span></div>
+    <button class="btn-gold" style="width:100%; max-width:280px; padding:13px; font-size:14px; margin-bottom:8px;" onclick="spinPremiumWheel()">Spin Now</button>
+    <button class="btn-gold" style="width:100%; max-width:280px; padding:10px; font-size:11px; background:#1e293b; color:#cbd5e1;" onclick="watchAdForSpin()">Watch Ad for +2 Spins</button>
   </div>
 
   <!-- 6. REDEEM SCREEN -->
@@ -744,7 +724,50 @@
       }
     }
 
-    
+    async function spinPremiumWheel() {
+      if (spinning) return;
+      if (currentSpins <= 0) {
+        notify("No spins left! Watch ad to refill spins.", "info");
+        return;
+      }
+      spinning = true;
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/spin/play`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: currentUser })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          notify(data.message || "Spin error", "error");
+          spinning = false;
+          return;
+        }
+        currentSpins = data.spinsLeft;
+        updateUI();
+
+        const canvas = document.getElementById("wheelCanvas");
+        const targetDeg = (360 - (data.targetIndex * 45)) + 1440;
+        canvas.style.transition = "transform 4s cubic-bezier(0.15, 0.9, 0.2, 1)";
+        canvas.style.transform = `rotate(${targetDeg}deg)`;
+
+        setTimeout(() => {
+          spinning = false;
+          if (data.requires30sAd) {
+            notify("🎉 Jackpot 100! Watch 30s Ad to claim.", "info");
+            openMonetizedAd(1, 30, 100);
+          } else {
+            currentCoins = data.balance;
+            updateUI();
+            notify(`🎉 Lucky Spin: +${data.prize} Coins!`, "success");
+          }
+        }, 4100);
+      } catch(err) {
+        spinning = false;
+        notify("Spin request error, try again", "error");
+      }
+    }
 
     window.addEventListener("DOMContentLoaded", () => {
       syncUserData();
@@ -808,306 +831,6 @@
   </div>
 </div>
 <script src="app.js?v=3"></script>
-
-
-
-
-
-
-<style>
-  #appToastContainer {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 999999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 90%;
-    max-width: 360px;
-    pointer-events: none;
-  }
-  .modern-toast {
-    pointer-events: auto;
-    background: rgba(15, 23, 42, 0.92);
-    border: 1px solid rgba(250, 204, 21, 0.4);
-    backdrop-filter: blur(12px);
-    color: #fff;
-    padding: 14px 18px;
-    border-radius: 14px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    font-weight: 600;
-    touch-action: pan-y;
-    user-select: none;
-    transition: transform 0.25s ease, opacity 0.25s ease;
-  }
-  .modern-toast.swiped {
-    transform: translateX(120%) scale(0.9);
-    opacity: 0;
-  }
-</style>
-<div id="appToastContainer"></div>
-
-<script>
-// ============= MODERN NOTIFICATION TOAST =============
-window.showToast = function(msg, icon) {
-  icon = icon || "✨";
-  const container = document.getElementById("appToastContainer");
-  if (!container) return;
-
-  const t = document.createElement("div");
-  t.className = "modern-toast";
-  t.innerHTML = `<span>${icon} ${msg}</span><small style="color:#64748b; font-size:10px; margin-left:12px;">SWIPE</small>`;
-
-  // Swipe-to-dismiss Touch Support
-  let startX = 0, currentX = 0;
-  t.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, {passive: true});
-  t.addEventListener("touchmove", (e) => {
-    currentX = e.touches[0].clientX;
-    let diff = currentX - startX;
-    if (diff > 0) t.style.transform = `translateX(${diff}px)`;
-  }, {passive: true});
-  t.addEventListener("touchend", () => {
-    if (currentX - startX > 80) {
-      t.classList.add("swiped");
-      setTimeout(() => t.remove(), 250);
-    } else {
-      t.style.transform = "translateX(0)";
-    }
-  });
-
-  container.appendChild(t);
-  setTimeout(() => {
-    if (t.parentElement) {
-      t.classList.add("swiped");
-      setTimeout(() => t.remove(), 250);
-    }
-  }, 4200);
-};
-
-// ============= HIGH-END METALLIC WHEEL =============
-var SLICES = [
-  { text: "10", val: 10, isAd: false, bg1: "#1e293b", bg2: "#0f172a" },
-  { text: "20", val: 20, isAd: false, bg1: "#334155", bg2: "#1e293b" },
-  { text: "30 📺", val: 30, isAd: true,  bg1: "#b45309", bg2: "#78350f" },
-  { text: "40", val: 40, isAd: false, bg1: "#1e293b", bg2: "#0f172a" },
-  { text: "50 📺", val: 50, isAd: true,  bg1: "#d97706", bg2: "#92400e" },
-  { text: "70 📺", val: 70, isAd: true,  bg1: "#b45309", bg2: "#78350f" },
-  { text: "80", val: 80, isAd: false, bg1: "#334155", bg2: "#1e293b" },
-  { text: "100 🌟", val: 100, isAd: true,  bg1: "#f59e0b", bg2: "#b45309" }
-];
-
-var curAngle = 0;
-var isSpinActive = false;
-
-function loadSpins() {
-  var s = localStorage.getItem("app_user_spins_final");
-  if (s === null) {
-    s = "5";
-    localStorage.setItem("app_user_spins_final", s);
-  }
-  return parseInt(s);
-}
-
-function saveSpins(val) {
-  localStorage.setItem("app_user_spins_final", val.toString());
-  syncSpinUI();
-}
-
-function syncSpinUI() {
-  var s = loadSpins();
-  document.querySelectorAll(".sync-spins").forEach(el => el.innerText = s);
-  var btn = document.getElementById("spinActionBtn");
-  if (btn) {
-    if (s <= 0) {
-      btn.innerText = "NO SPINS LEFT";
-      btn.style.opacity = "0.6";
-    } else {
-      btn.innerText = "SPIN NOW (" + s + " LEFT)";
-      btn.style.opacity = "1";
-    }
-  }
-}
-
-function renderPremiumWheel() {
-  var cvs = document.getElementById("wheelCanvas");
-  if (!cvs) return;
-  var ctx = cvs.getContext("2d");
-  var total = SLICES.length;
-  var arc = (2 * Math.PI) / total;
-  var cx = cvs.width / 2;
-  var cy = cvs.height / 2;
-  var r = cx - 12;
-
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
-
-  // Outer Golden Ring
-  ctx.beginPath();
-  ctx.arc(cx, cy, r + 6, 0, 2 * Math.PI);
-  var ringGrad = ctx.createLinearGradient(0, 0, cvs.width, cvs.height);
-  ringGrad.addColorStop(0, "#facc15");
-  ringGrad.addColorStop(0.5, "#78350f");
-  ringGrad.addColorStop(1, "#facc15");
-  ctx.strokeStyle = ringGrad;
-  ctx.lineWidth = 6;
-  ctx.stroke();
-
-  // Slices
-  for (var i = 0; i < total; i++) {
-    var a = curAngle + (i * arc);
-    ctx.beginPath();
-    var grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
-    grad.addColorStop(0, SLICES[i].bg1);
-    grad.addColorStop(1, SLICES[i].bg2);
-    ctx.fillStyle = grad;
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, a, a + arc);
-    ctx.lineTo(cx, cy);
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(250, 204, 21, 0.4)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Text label
-    ctx.save();
-    ctx.fillStyle = SLICES[i].isAd ? "#ffffff" : "#facc15";
-    ctx.font = "bold 14px system-ui, -apple-system, sans-serif";
-    ctx.translate(cx, cy);
-    ctx.rotate(a + arc / 2);
-    ctx.textAlign = "right";
-    ctx.shadowColor = "rgba(0,0,0,0.8)";
-    ctx.shadowBlur = 4;
-    ctx.fillText(SLICES[i].text, r - 22, 5);
-    ctx.restore();
-  }
-
-  // Metallic Center Cap
-  ctx.beginPath();
-  ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
-  var centerGrad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, 22);
-  centerGrad.addColorStop(0, "#fef08a");
-  centerGrad.addColorStop(0.5, "#eab308");
-  centerGrad.addColorStop(1, "#713f12");
-  ctx.fillStyle = centerGrad;
-  ctx.fill();
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-}
-
-// ============= SMART INLINE AD STREAM =============
-function startInlineAd(seconds, onFinish) {
-  var box = document.getElementById("inlineAdPlayer");
-  var secSpan = document.getElementById("adSecondsLeft");
-  if (!box || !secSpan) {
-    if (onFinish) onFinish();
-    return;
-  }
-
-  box.style.display = "block";
-  box.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  var left = seconds;
-  secSpan.innerText = left;
-
-  var timer = setInterval(function() {
-    left--;
-    secSpan.innerText = left;
-    if (left <= 0) {
-      clearInterval(timer);
-      box.style.display = "none";
-      if (onFinish) onFinish();
-    }
-  }, 1000);
-}
-
-function watchAdForExtraSpin() {
-  showToast("Sponsored ad started. Wait until complete to claim +1 Spin.", "📺");
-  startInlineAd(10, function() {
-    var s = loadSpins();
-    saveSpins(s + 1);
-    showToast("+1 Spin added successfully!", "🎉");
-  });
-}
-
-function runCustomSpin() {
-  if (isSpinActive) return;
-
-  var s = loadSpins();
-  if (s <= 0) {
-    showToast("No spins remaining! Watch an ad to unlock more.", "⚠️");
-    return;
-  }
-
-  saveSpins(s - 1);
-  isSpinActive = true;
-
-  var total = SLICES.length;
-  var arc = (2 * Math.PI) / total;
-  var winIdx = Math.floor(Math.random() * total);
-  var prize = SLICES[winIdx];
-
-  var targetAngle = (total - winIdx - 0.5) * arc - (Math.PI / 2);
-  var rotations = (5 + Math.floor(Math.random() * 3)) * 2 * Math.PI;
-  var endAngle = rotations + targetAngle;
-
-  var startAngle = curAngle % (2 * Math.PI);
-  var startTime = performance.now();
-  var duration = 4000;
-
-  function anim(now) {
-    var elapsed = now - startTime;
-    var p = Math.min(elapsed / duration, 1);
-    var ease = 1 - Math.pow(1 - p, 3);
-    curAngle = startAngle + (endAngle * ease);
-    renderPremiumWheel();
-
-    if (p < 1) {
-      requestAnimationFrame(anim);
-    } else {
-      isSpinActive = false;
-      if (prize.isAd) {
-        showToast("You hit " + prize.val + " Coins! Watch the sponsor ad below to claim.", "🎁");
-        startInlineAd(12, function() {
-          applyCoins(prize.val);
-          showToast(prize.val + " Coins credited to your wallet!", "💰");
-        });
-      } else {
-        applyCoins(prize.val);
-        showToast("Awesome! You won " + prize.val + " Coins!", "🎉");
-      }
-    }
-  }
-  requestAnimationFrame(anim);
-}
-
-function applyCoins(amt) {
-  var els = document.querySelectorAll(".sync-coins, #userBalance");
-  for (var i = 0; i < els.length; i++) {
-    var cur = parseInt(els[i].innerText.replace(/[^0-9]/g, "") || "0");
-    els[i].innerText = (cur + amt).toLocaleString();
-  }
-  if (typeof currentCoins !== "undefined") {
-    currentCoins += amt;
-    localStorage.setItem("user_permanent_coins", currentCoins);
-  }
-}
-
-// Auto sync & draw loop
-setInterval(function() {
-  syncSpinUI();
-  var cvs = document.getElementById("wheelCanvas");
-  if (cvs && cvs.offsetParent !== null && !isSpinActive) {
-    renderPremiumWheel();
-  }
-}, 350);
-</script>
 
 </body>
 </html>
