@@ -14,6 +14,9 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+// Wheel segments matching frontend
+const WHEEL_SECTORS = [50, 10, 100, 30, 5, 100, 20, 100];
+
 app.get('/', (req, res) => {
   res.json({ status: 'API is running successfully', timestamp: new Date() });
 });
@@ -46,6 +49,99 @@ app.post('/api/login', (req, res) => {
     success: true,
     user,
     doneTasks: user.claimedTasks || []
+  });
+});
+
+// Spin Wheel Endpoint
+app.post('/api/spin', (req, res) => {
+  const { userId, identifier } = req.body;
+  const id = String(userId || identifier);
+  let user = db.get('users').find({ id });
+
+  if (!user.value()) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  let currentSpins = user.value().spins ?? 50;
+  if (currentSpins <= 0) {
+    return res.json({ success: false, message: 'No spins left! Watch an ad to refill.' });
+  }
+
+  // Random slice from wheel
+  const prizeIndex = Math.floor(Math.random() * WHEEL_SECTORS.length);
+  const prize = WHEEL_SECTORS[prizeIndex];
+  const requires30sAd = prize >= 100 && Math.random() < 0.3;
+
+  currentSpins = Math.max(0, currentSpins - 1);
+  let currentCoins = Number(user.value().coins || user.value().balance || 0);
+
+  if (!requires30sAd) {
+    currentCoins += prize;
+  }
+
+  user.assign({ coins: currentCoins, balance: currentCoins, spins: currentSpins }).write();
+
+  res.json({
+    success: true,
+    prizeIndex,
+    prize,
+    requires30sAd,
+    spins: currentSpins,
+    coins: currentCoins,
+    balance: currentCoins
+  });
+});
+
+// Spin Refill
+app.post('/api/spin/refill', (req, res) => {
+  const { userId, identifier } = req.body;
+  const id = String(userId || identifier);
+  let user = db.get('users').find({ id });
+  if (user.value()) {
+    const updatedSpins = Number(user.value().spins || 0) + 3;
+    user.assign({ spins: updatedSpins }).write();
+    return res.json({ success: true, spins: updatedSpins });
+  }
+  res.json({ success: true, spins: 3 });
+});
+
+// Withdraw Endpoint
+app.post('/api/withdraw', (req, res) => {
+  const { userId, identifier, amount, coins, address, method } = req.body;
+  const id = String(userId || identifier);
+  const coinsNeeded = Number(coins || (amount * 100));
+
+  let user = db.get('users').find({ id });
+  if (!user.value()) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  const userCoins = Number(user.value().coins || user.value().balance || 0);
+  if (userCoins < coinsNeeded) {
+    return res.json({ success: false, message: 'Insufficient coins balance!' });
+  }
+
+  const remainingCoins = userCoins - coinsNeeded;
+  user.assign({ coins: remainingCoins, balance: remainingCoins, payout_address: address || user.value().payout_address }).write();
+
+  const withdrawal = {
+    id: Date.now(),
+    userId: id,
+    amount,
+    coinsDeducted: coinsNeeded,
+    address: address || '',
+    method: method || 'UPI',
+    status: 'pending',
+    date: new Date()
+  };
+  db.get('withdrawals').push(withdrawal).write();
+
+  res.json({
+    success: true,
+    message: 'Withdrawal request submitted!',
+    balance: remainingCoins,
+    coins: remainingCoins,
+    withdrawal
   });
 });
 
@@ -85,35 +181,6 @@ app.post('/api/ad/verify', (req, res) => {
   res.json({ success: true, coins: amount, balance: amount });
 });
 
-// Spin Wheel Endpoint
-app.post('/api/spin', (req, res) => {
-  const { userId, identifier, points, coins } = req.body;
-  const id = String(userId || identifier);
-  const amount = Number(points || coins || 0);
-
-  let user = db.get('users').find({ id });
-  if (user.value()) {
-    const newCoins = Number(user.value().coins || user.value().balance || 0) + amount;
-    const spins = Math.max(0, Number(user.value().spins || 1) - 1);
-    user.assign({ coins: newCoins, balance: newCoins, spins }).write();
-    return res.json({ success: true, coins: newCoins, balance: newCoins, spins });
-  }
-  res.json({ success: true, coins: amount, balance: amount, spins: 0 });
-});
-
-// Spin Refill Endpoint
-app.post('/api/spin/refill', (req, res) => {
-  const { userId, identifier } = req.body;
-  const id = String(userId || identifier);
-  let user = db.get('users').find({ id });
-  if (user.value()) {
-    const updatedSpins = Number(user.value().spins || 0) + 3;
-    user.assign({ spins: updatedSpins }).write();
-    return res.json({ success: true, spins: updatedSpins });
-  }
-  res.json({ success: true, spins: 3 });
-});
-
 // Generic Reward / Game Reward
 app.post(['/api/reward', '/api/game/reward'], (req, res) => {
   const { userId, identifier, rewardPoints, coins, reward } = req.body;
@@ -139,15 +206,6 @@ app.post('/api/profile/update-address', (req, res) => {
     return res.json({ success: true, payout_address: address });
   }
   res.json({ success: true });
-});
-
-// Withdraw Endpoint
-app.post('/api/withdraw', (req, res) => {
-  const { userId, identifier, amount, upiId } = req.body;
-  const id = String(userId || identifier);
-  const withdrawal = { id: Date.now(), userId: id, amount, upiId, status: 'pending', date: new Date() };
-  db.get('withdrawals').push(withdrawal).write();
-  res.json({ success: true, message: 'Withdrawal request submitted!', withdrawal });
 });
 
 app.listen(PORT, () => {
