@@ -6,7 +6,7 @@ const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync('db.json');
 const db = low(adapter);
 
-db.defaults({ users: [], withdrawals: [], tasks: [] }).write();
+db.defaults({ users: [], devices: {}, withdrawals: [], tasks: [] }).write();
 
 const app = express();
 app.use(cors());
@@ -14,48 +14,68 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// Wheel segments matching frontend
-const WHEEL_SECTORS = [50, 10, 100, 30, 5, 100, 20, 100];
+// Wheel slices clockwise starting from top (0 deg) matching frontend canvas:
+// [100, 20, 100, 50, 10, 100, 30, 5]
+const WHEEL_SECTORS = [100, 20, 100, 50, 10, 100, 30, 5];
 
 app.get('/', (req, res) => {
   res.json({ status: 'API is running successfully', timestamp: new Date() });
 });
 
-// Login / Register
+// Strict Single-Device Login / Register
 app.post('/api/login', (req, res) => {
-  const { identifier, phone, deviceId, hardwareId } = req.body;
-  const id = String(identifier || phone || deviceId || hardwareId || 'user_' + Date.now());
-  let user = db.get('users').find({ id }).value();
-  
+  const { identifier, phone, deviceId } = req.body;
+  const devId = String(deviceId || 'unknown_device');
+  const userPhone = String(identifier || phone || '').trim();
+
+  if (!userPhone) {
+    return res.status(400).json({ success: false, message: 'Please enter mobile number' });
+  }
+
+  // Device-Lock Check
+  let deviceMap = db.get('devices').value() || {};
+  if (deviceMap[devId] && deviceMap[devId] !== userPhone) {
+    return res.status(403).json({
+      success: false,
+      message: `Device locked to account: ${deviceMap[devId]}. Multiple accounts prohibited!`
+    });
+  }
+
+  let user = db.get('users').find({ id: userPhone }).value();
   if (!user) {
     user = {
-      id,
-      identifier: id,
+      id: userPhone,
+      identifier: userPhone,
       coins: 20000,
       balance: 20000,
       spins: 50,
       payout_address: '',
+      deviceId: devId,
       adsWatched: 0,
       claimedTasks: []
     };
     db.get('users').push(user).write();
+    deviceMap[devId] = userPhone;
+    db.set('devices', deviceMap).write();
   } else {
-    if (user.coins === undefined) user.coins = user.balance || 20000;
-    if (user.spins === undefined) user.spins = 50;
-    if (!user.claimedTasks) user.claimedTasks = [];
+    if (!deviceMap[devId]) {
+      deviceMap[devId] = userPhone;
+      db.set('devices', deviceMap).write();
+    }
   }
 
   res.json({
     success: true,
     user,
+    balance: user.coins,
     doneTasks: user.claimedTasks || []
   });
 });
 
 // Spin Wheel Endpoint
 app.post('/api/spin', (req, res) => {
-  const { userId, identifier } = req.body;
-  const id = String(userId || identifier);
+  const { identifier, userId } = req.body;
+  const id = String(identifier || userId);
   let user = db.get('users').find({ id });
 
   if (!user.value()) {
@@ -64,16 +84,15 @@ app.post('/api/spin', (req, res) => {
 
   let currentSpins = user.value().spins ?? 50;
   if (currentSpins <= 0) {
-    return res.json({ success: false, message: 'No spins left! Watch an ad to refill.' });
+    return res.json({ success: false, message: 'No spins left! Refill required.' });
   }
 
-  // Random slice from wheel
   const prizeIndex = Math.floor(Math.random() * WHEEL_SECTORS.length);
   const prize = WHEEL_SECTORS[prizeIndex];
-  const requires30sAd = prize >= 100 && Math.random() < 0.3;
+  const requires30sAd = (prize === 100);
 
   currentSpins = Math.max(0, currentSpins - 1);
-  let currentCoins = Number(user.value().coins || user.value().balance || 0);
+  let currentCoins = Number(user.value().coins || 0);
 
   if (!requires30sAd) {
     currentCoins += prize;
@@ -92,10 +111,45 @@ app.post('/api/spin', (req, res) => {
   });
 });
 
+// One-Time Tasks with Permanent Duplicate Guard
+app.post('/api/task/claim', (req, res) => {
+  const { identifier, userId, coins, taskName } = req.body;
+  const id = String(identifier || userId);
+  const task = String(taskName || 'Task');
+  const amount = Number(coins || 50);
+
+  let user = db.get('users').find({ id });
+  if (!user.value()) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  let currentTasks = user.value().claimedTasks || [];
+  if (currentTasks.includes(task)) {
+    return res.json({
+      success: false,
+      alreadyClaimed: true,
+      message: `${task} already claimed! Opening link without coins.`,
+      balance: user.value().coins,
+      doneTasks: currentTasks
+    });
+  }
+
+  currentTasks.push(task);
+  const newCoins = Number(user.value().coins || 0) + amount;
+  user.assign({ coins: newCoins, balance: newCoins, claimedTasks: currentTasks }).write();
+
+  res.json({
+    success: true,
+    coins: newCoins,
+    balance: newCoins,
+    doneTasks: currentTasks
+  });
+});
+
 // Spin Refill
 app.post('/api/spin/refill', (req, res) => {
-  const { userId, identifier } = req.body;
-  const id = String(userId || identifier);
+  const { identifier, userId } = req.body;
+  const id = String(identifier || userId);
   let user = db.get('users').find({ id });
   if (user.value()) {
     const updatedSpins = Number(user.value().spins || 0) + 3;
@@ -105,10 +159,26 @@ app.post('/api/spin/refill', (req, res) => {
   res.json({ success: true, spins: 3 });
 });
 
+// Ad Verify Endpoint
+app.post('/api/ad/verify', (req, res) => {
+  const { identifier, userId, coins, reward } = req.body;
+  const id = String(identifier || userId);
+  const amount = Number(coins || reward || 50);
+
+  let user = db.get('users').find({ id });
+  if (user.value()) {
+    const newCoins = Number(user.value().coins || 0) + amount;
+    const ads = Number(user.value().adsWatched || 0) + 1;
+    user.assign({ coins: newCoins, balance: newCoins, adsWatched: ads }).write();
+    return res.json({ success: true, coins: newCoins, balance: newCoins, adsWatched: ads });
+  }
+  res.json({ success: true, coins: amount, balance: amount });
+});
+
 // Withdraw Endpoint
 app.post('/api/withdraw', (req, res) => {
-  const { userId, identifier, amount, coins, address, method } = req.body;
-  const id = String(userId || identifier);
+  const { identifier, userId, amount, coins, address, method } = req.body;
+  const id = String(identifier || userId);
   const coinsNeeded = Number(coins || (amount * 100));
 
   let user = db.get('users').find({ id });
@@ -116,7 +186,7 @@ app.post('/api/withdraw', (req, res) => {
     return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  const userCoins = Number(user.value().coins || user.value().balance || 0);
+  const userCoins = Number(user.value().coins || 0);
   if (userCoins < coinsNeeded) {
     return res.json({ success: false, message: 'Insufficient coins balance!' });
   }
@@ -140,72 +210,8 @@ app.post('/api/withdraw', (req, res) => {
     success: true,
     message: 'Withdrawal request submitted!',
     balance: remainingCoins,
-    coins: remainingCoins,
-    withdrawal
+    coins: remainingCoins
   });
-});
-
-// Task Claim Endpoint
-app.post('/api/task/claim', (req, res) => {
-  const { userId, identifier, coins, reward, taskName, taskType } = req.body;
-  const id = String(userId || identifier);
-  const amount = Number(coins || reward || 50);
-  const task = taskName || taskType || 'Task';
-
-  let user = db.get('users').find({ id });
-  if (user.value()) {
-    const currentTasks = user.value().claimedTasks || [];
-    if (!currentTasks.includes(task)) {
-      currentTasks.push(task);
-    }
-    const newCoins = Number(user.value().coins || user.value().balance || 0) + amount;
-    user.assign({ coins: newCoins, balance: newCoins, claimedTasks: currentTasks }).write();
-    return res.json({ success: true, coins: newCoins, balance: newCoins, doneTasks: currentTasks });
-  }
-  res.json({ success: true, coins: amount, balance: amount });
-});
-
-// Ad Verify Endpoint
-app.post('/api/ad/verify', (req, res) => {
-  const { userId, identifier, coins, reward } = req.body;
-  const id = String(userId || identifier);
-  const amount = Number(coins || reward || 50);
-
-  let user = db.get('users').find({ id });
-  if (user.value()) {
-    const newCoins = Number(user.value().coins || user.value().balance || 0) + amount;
-    const ads = Number(user.value().adsWatched || 0) + 1;
-    user.assign({ coins: newCoins, balance: newCoins, adsWatched: ads }).write();
-    return res.json({ success: true, coins: newCoins, balance: newCoins, adsWatched: ads });
-  }
-  res.json({ success: true, coins: amount, balance: amount });
-});
-
-// Generic Reward / Game Reward
-app.post(['/api/reward', '/api/game/reward'], (req, res) => {
-  const { userId, identifier, rewardPoints, coins, reward } = req.body;
-  const id = String(userId || identifier);
-  const amount = Number(rewardPoints || coins || reward || 10);
-
-  let user = db.get('users').find({ id });
-  if (user.value()) {
-    const newCoins = Number(user.value().coins || user.value().balance || 0) + amount;
-    user.assign({ coins: newCoins, balance: newCoins }).write();
-    return res.json({ success: true, coins: newCoins, balance: newCoins });
-  }
-  res.json({ success: true, balance: amount });
-});
-
-// Update Payout Address
-app.post('/api/profile/update-address', (req, res) => {
-  const { userId, identifier, address } = req.body;
-  const id = String(userId || identifier);
-  let user = db.get('users').find({ id });
-  if (user.value()) {
-    user.assign({ payout_address: address }).write();
-    return res.json({ success: true, payout_address: address });
-  }
-  res.json({ success: true });
 });
 
 app.listen(PORT, () => {
