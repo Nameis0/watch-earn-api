@@ -26,51 +26,105 @@ function getWeeklyWithdrawHistory(userId) {
   return validHistory;
 }
 
+function setPayoutMethod(method) {
+  document.getElementById("selectedPayoutMethod").value = method;
+  const tabs = ["phonepe", "gpay", "paytm"];
+  tabs.forEach(t => {
+    const el = document.getElementById("tab-" + t);
+    if (!el) return;
+    if (t === method.toLowerCase()) {
+      el.style.border = "1px solid #facc15";
+      el.style.background = "rgba(250,204,21,0.15)";
+      el.style.color = "#fff";
+    } else {
+      el.style.border = "1px solid rgba(255,255,255,0.1)";
+      el.style.background = "rgba(15,23,42,0.6)";
+      el.style.color = "#94a3b8";
+    }
+  });
+
+  const label = document.getElementById("payoutInputLabel");
+  const input = document.getElementById("upiIdInput");
+  if (label && input) {
+    if (method === "PhonePe") {
+      label.innerText = "PhonePe UPI ID / Mobile Number";
+      input.placeholder = "e.g., 9876543210@ybl or 10-digit mobile";
+    } else if (method === "GPay") {
+      label.innerText = "GPay UPI ID / Registered Mobile";
+      input.placeholder = "e.g., user@okhdfcbank or mobile";
+    } else {
+      label.innerText = "Paytm Wallet / UPI Number";
+      input.placeholder = "e.g., 9876543210@paytm or Paytm number";
+    }
+  }
+}
+
 function submitWithdrawRequest() {
   const upiInput = document.getElementById("upiIdInput");
   const amountSelect = document.getElementById("redeemAmountSelect");
+  const method = document.getElementById("selectedPayoutMethod") ? document.getElementById("selectedPayoutMethod").value : "UPI";
 
-  const upiId = upiInput ? upiInput.value.trim() : "";
+  const payoutDest = upiInput ? upiInput.value.trim() : "";
   const coinsToRedeem = parseInt(amountSelect ? amountSelect.value : 10000);
-  const userId = getUserIdentifier();
+  const userId = (typeof getUserIdentifier === "function") ? getUserIdentifier() : (localStorage.getItem("app_device_linked_user") || "7893988980");
 
-  if (!upiId || !upiId.includes("@")) {
-    alert("దయచేసి సరైన UPI ID నమోదు చేయండి (उदा: user@paytm)");
+  if (!payoutDest || payoutDest.length < 5) {
+    if (typeof showToast === "function") {
+      showToast("Please enter a valid UPI ID or Mobile Number.", "⚠️");
+    }
     return;
   }
 
+  // Tiered limit: 20 for Admin 7893988980, 3 for standard users
+  const maxWeeklyLimit = (String(userId).trim() === "7893988980") ? 20 : 3;
   const weeklyHistory = getWeeklyWithdrawHistory(userId);
-  if (weeklyHistory.length >= 3) {
-    alert("⚠️ వీక్లీ లిమిట్ దాటింది!\n\nఈ వారంలో ఇప్పటికే 3 సార్లు విత్‌డ్రా చేసుకున్నారు. వచ్చే వారం మళ్లీ ప్రయత్నించండి.");
+
+  if (weeklyHistory.length >= maxWeeklyLimit) {
+    if (typeof showToast === "function") {
+      showToast("Weekly limit reached (" + weeklyHistory.length + "/" + maxWeeklyLimit + "). Try next week.", "⚠️");
+    }
     return;
   }
 
   const balanceElem = document.getElementById("userBalance") || document.querySelector("h1, .balance-amount");
-  let currentBalance = parseInt(balanceElem ? balanceElem.innerText.replace(/[^0-9]/g, "") : 20050);
+  let currentBalance = parseInt(balanceElem ? balanceElem.innerText.replace(/[^0-9]/g, "") : 20000);
 
   if (currentBalance < coinsToRedeem) {
-    alert("మీ వద్ద సరిపడా కాయిన్స్ లేవు! కనీసం " + coinsToRedeem.toLocaleString() + " కాయిన్స్ అవసరం.");
+    if (typeof showToast === "function") {
+      showToast("Insufficient balance! Minimum " + coinsToRedeem.toLocaleString() + " coins required.", "⚠️");
+    }
     return;
   }
 
   currentBalance -= coinsToRedeem;
   if (balanceElem) balanceElem.innerText = currentBalance.toLocaleString();
+  localStorage.setItem("user_permanent_coins", currentBalance.toString());
 
   const newRecord = {
     amount: coinsToRedeem / 1000,
     coins: coinsToRedeem,
-    upi: upiId,
+    upi: "[" + method + "] " + payoutDest,
     timestamp: Date.now(),
     dateStr: new Date().toLocaleDateString("en-IN")
   };
   weeklyHistory.push(newRecord);
   localStorage.setItem("withdraw_history_" + userId, JSON.stringify(weeklyHistory));
 
-  // టెలిగ్రామ్ అలర్ట్
-  sendGroupedTelegramNotification(userId, upiId, coinsToRedeem, weeklyHistory);
+  if (typeof sendGroupedTelegramNotification === "function") {
+    sendGroupedTelegramNotification(userId, "[" + method + "] " + payoutDest, coinsToRedeem, weeklyHistory);
+  }
 
   closeRedeemModal();
-  alert("విత్‌డ్రా రిక్వెస్ట్ నమోదైంది!\n\nమొత్తం: ₹" + (coinsToRedeem / 1000) + "\nఈ వారం పూర్తయిన విత్‌డ్రాలు: " + weeklyHistory.length + "/3");
+
+  // Show Modern Receipt Modal
+  const successModal = document.getElementById("withdrawSuccessModal");
+  if (successModal) {
+    document.getElementById("receiptAmount").innerText = "₹" + (coinsToRedeem / 1000);
+    document.getElementById("receiptMethod").innerText = method;
+    document.getElementById("receiptDest").innerText = payoutDest;
+    document.getElementById("receiptLimit").innerText = weeklyHistory.length + " / " + maxWeeklyLimit;
+    successModal.style.display = "flex";
+  }
 }
 
 function sendGroupedTelegramNotification(userId, upiId, coins, history) {

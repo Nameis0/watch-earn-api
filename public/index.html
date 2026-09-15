@@ -713,11 +713,11 @@
     }
 
     // --- WHEEL MATH MATCHED EXACTLY TO SERVER SECTORS ---
-    const segs = ["100", "30", "5", "100", "20", "100", "50", "10"];
+    // const segs = [];
     const cols = ["#facc15", "#0f172a", "#facc15", "#0f172a", "#facc15", "#0f172a", "#facc15", "#0f172a"];
     let spinning = false;
 
-    function initPremiumWheel() {
+    function initPremiumWheel() { return;
       const canvas = document.getElementById("wheelCanvas");
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -807,7 +807,7 @@
     <button type="button" onclick="closeRedeemModal()" style="width:100%; padding:8px; background:transparent; border:none; color:#8b949e; font-size:13px; cursor:pointer;">Cancel</button>
   </div>
 </div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=6"></script>
 
 
 
