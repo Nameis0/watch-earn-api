@@ -1,15 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
 const https = require('https');
-const app = express();
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-const DB_FILE = './db.json';
-const BOT_TOKEN = '8439244872:AAFiAPlZhrf5hG1odhZ25Y6oGbrCtNyaRVY';
-const CHAT_ID = '8954689240';
+const DB_FILE = path.join(__dirname, 'database.json');
+const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
+const CHAT_ID = process.env.CHAT_ID || 'YOUR_CHAT_ID_HERE';
 
 function readDB() {
   try {
@@ -23,9 +24,37 @@ function writeDB(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-function sendTelegramNotification(text) {
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=HTML`;
-  https.get(url, (res) => {}).on('error', (e) => console.error('Telegram Bot Error:', e));
+// Send Telegram Notification with Inline Buttons
+function sendTelegramNotification(text, wId = null) {
+  const payloadData = {
+    chat_id: CHAT_ID,
+    text: text,
+    parse_mode: 'HTML'
+  };
+
+  if (wId) {
+    payloadData.reply_markup = {
+      inline_keyboard: [
+        [
+          { text: "Approve ✅", callback_data: `approve_${wId}` },
+          { text: "Reject ❌", callback_data: `reject_${wId}` }
+        ]
+      ]
+    };
+  }
+
+  const payload = JSON.stringify(payloadData);
+  const req = https.request(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload)
+    }
+  }, () => {});
+
+  req.on('error', (e) => console.error('Telegram Error:', e));
+  req.write(payload);
+  req.end();
 }
 
 // User Sync / Register / Login
@@ -34,147 +63,55 @@ app.post('/api/user/sync', (req, res) => {
   if (!identifier) return res.status(400).json({ success: false, message: 'Invalid ID' });
 
   const db = readDB();
-  let user = db.users.find(u => u.identifier === identifier || u.id === identifier);
+  let user = (db.users || []).find(u => u.identifier === identifier);
 
   if (!user) {
     user = {
-      id: identifier,
-      identifier: identifier,
-      coins: 100,
-      balance: 100,
-      spins: 5,
-      payout_address: '',
-      adsWatched: 0,
-      claimedTasks: [],
-      streak: 1,
-      lastClaimDate: null,
-      referredBy: null,
-      refCount: 0
+      identifier,
+      coins: 10000,
+      createdAt: new Date().toISOString()
     };
     db.users.push(user);
     writeDB(db);
   }
 
-  res.json({
-    success: true,
-    coins: user.coins !== undefined ? user.coins : user.balance,
-    balance: user.balance !== undefined ? user.balance : user.coins,
-    spins: user.spins,
-    claimedTasks: user.claimedTasks || [],
-    streak: user.streak || 1,
-    refCount: user.refCount || 0
-  });
+  res.json({ success: true, user });
 });
 
-// Ad Verify
-app.post('/api/ad/verify', (req, res) => {
-  const { identifier, coins, reward } = req.body;
-  const rewardCoins = Number(coins || reward || 20);
-  const db = readDB();
-  let user = db.users.find(u => u.identifier === identifier || u.id === identifier);
+// Withdrawal Request Route
+app.post('/api/withdraw', (req, res) => {
+  const { identifier, reqCoins, method, account } = req.body;
+  if (!identifier || !reqCoins || !method || !account) {
+    return res.status(400).json({ success: false, message: 'All fields required' });
+  }
 
+  const db = readDB();
+  const user = (db.users || []).find(u => u.identifier === identifier);
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-  user.coins = (user.coins || 0) + rewardCoins;
-  user.balance = user.coins;
-  user.adsWatched = (user.adsWatched || 0) + 1;
-  writeDB(db);
-
-  res.json({ success: true, balance: user.coins, coins: user.coins, reward: rewardCoins });
-});
-
-// Task Claim (YouTube / Telegram / Daily)
-app.post('/api/task/claim', (req, res) => {
-  const { identifier, taskType, reward } = req.body;
-  const rewardCoins = Number(reward || 50);
-  const db = readDB();
-  let user = db.users.find(u => u.identifier === identifier || u.id === identifier);
-
-  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  if (!user.claimedTasks) user.claimedTasks = [];
-
-  if (user.claimedTasks.includes(taskType)) {
-    return res.json({ success: false, message: 'Task already claimed!' });
+  if (user.coins < reqCoins) {
+    return res.status(400).json({ success: false, message: 'Insufficient coins' });
   }
 
-  user.claimedTasks.push(taskType);
-  user.coins = (user.coins || 0) + rewardCoins;
-  user.balance = user.coins;
-  writeDB(db);
-
-  res.json({ success: true, balance: user.coins, message: 'Task reward claimed!' });
-});
-
-// Spin Play Math
-const SECTORS = [100, 30, 5, 100, 20, 100, 50, 10];
-app.post('/api/spin/play', (req, res) => {
-  const { identifier } = req.body;
-  const db = readDB();
-  let user = db.users.find(u => u.identifier === identifier || u.id === identifier);
-
-  if (!user) return res.status(404).json({ success: false });
-  if ((user.spins || 0) <= 0) {
-    return res.json({ success: false, message: 'No spins left!' });
-  }
-
-  user.spins -= 1;
-  const targetIndex = Math.floor(Math.random() * SECTORS.length);
-  const prize = SECTORS[targetIndex];
-
-  if (prize === 100) {
-    writeDB(db);
-    return res.json({ success: true, targetIndex, prize, spinsLeft: user.spins, requires30sAd: true });
-  }
-
-  user.coins = (user.coins || 0) + prize;
-  user.balance = user.coins;
-  writeDB(db);
-
-  res.json({ success: true, targetIndex, prize, balance: user.coins, spinsLeft: user.spins, requires30sAd: false });
-});
-
-// Spin Refill
-app.post('/api/spin/refill', (req, res) => {
-  const { identifier } = req.body;
-  const db = readDB();
-  let user = db.users.find(u => u.identifier === identifier || u.id === identifier);
-
-  if (!user) return res.status(404).json({ success: false });
-  user.spins = (user.spins || 0) + 3;
-  writeDB(db);
-
-  res.json({ success: true, spins: user.spins });
-});
-
-// Withdrawal with Telegram Bot Push
-app.post('/api/withdraw/request', (req, res) => {
-  const { identifier, coins, account, method } = req.body;
-  const reqCoins = Number(coins);
-  const db = readDB();
-  let user = db.users.find(u => u.identifier === identifier || u.id === identifier);
-
-  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  if ((user.coins || 0) < reqCoins) {
-    return res.json({ success: false, message: 'Insufficient balance' });
-  }
-
+  // Deduct coins & create withdrawal record
   user.coins -= reqCoins;
-  user.balance = user.coins;
 
   const wReq = {
-    id: Date.now(),
-    user: identifier,
+    id: Date.now().toString(),
+    identifier,
     coins: reqCoins,
-    account: account,
-    method: method,
-    date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+    amount: reqCoins / 100,
+    method,
+    account,
+    status: 'Pending',
+    date: new Date().toLocaleString()
   };
 
-  if (!db.withdrawals) db.withdrawals = [];
+  db.withdrawals = db.withdrawals || [];
   db.withdrawals.push(wReq);
   writeDB(db);
 
-  // Send Direct Telegram Alert
+  // Send Direct Telegram Alert with Buttons
   const msg = `🔔 <b>NEW WITHDRAWAL REQUEST</b>\n\n` +
               `👤 <b>User:</b> <code>${identifier}</code>\n` +
               `💰 <b>Amount:</b> ${reqCoins} Coins (₹${reqCoins / 100})\n` +
@@ -182,9 +119,48 @@ app.post('/api/withdraw/request', (req, res) => {
               `📲 <b>Details:</b> <code>${account}</code>\n` +
               `⏰ <b>Time:</b> ${wReq.date}`;
 
-  sendTelegramNotification(msg);
+  sendTelegramNotification(msg, wReq.id);
 
   res.json({ success: true, balance: user.coins, message: 'Withdrawal submitted!' });
+});
+
+// Telegram Webhook Handler (Button Click Response)
+app.post('/api/telegram-webhook', (req, res) => {
+  const update = req.body;
+  if (update && update.callback_query) {
+    const cb = update.callback_query;
+    const [action, wId] = (cb.data || '').split('_');
+
+    const db = readDB();
+    const item = (db.withdrawals || []).find(w => String(w.id) === String(wId));
+
+    if (item) {
+      item.status = action === 'approve' ? 'Approved' : 'Rejected';
+      writeDB(db);
+
+      const statusBadge = action === 'approve' ? 'Approved ✅' : 'Rejected ❌';
+      const editPayload = JSON.stringify({
+        chat_id: cb.message.chat.id,
+        message_id: cb.message.message_id,
+        text: `${cb.message.text}\n\n👉 <b>Status: ${statusBadge}</b>`,
+        parse_mode: 'HTML'
+      });
+
+      const editReq = https.request(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(editPayload)
+        }
+      }, () => {});
+      editReq.write(editPayload);
+      editReq.end();
+    }
+
+    // Stop loading indicator on the Telegram button
+    https.get(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery?callback_query_id=${cb.id}`);
+  }
+  res.sendStatus(200);
 });
 
 const PORT = process.env.PORT || 3000;
