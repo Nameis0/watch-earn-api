@@ -147,6 +147,11 @@
 }
 </style>
 
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
 </head>
 <body>
 
@@ -462,14 +467,27 @@
   </div>
 
   <!-- LOGIN MODAL -->
-  <div id="loginOverlay" class="modal-overlay">
+  
+  <div id="loginOverlay" class="modal-overlay" style="display:none;">
     <div class="modal-card">
       <div class="brand" style="justify-content:center; margin-bottom:8px;"><i class="fa-solid fa-play-circle"></i> Watch&Earn</div>
-      <p style="font-size:11px; color:#94a3b8;">Single Account Per Hardware (Anti-Fraud)</p>
-      <input type="text" id="loginId" class="input-box" placeholder="Mobile Number (e.g. 7893988980)">
-      <button class="btn-gold" style="width:100%; padding:12px;" onclick="doLogin()">Login / Register</button>
+      <p style="font-size:11px; color:#94a3b8; margin-bottom:12px;">Mobile OTP Verification (Anti-Fraud)</p>
+      
+      <div id="phoneStep">
+        <input type="tel" id="loginPhone" class="input-box" placeholder="10-Digit Mobile (e.g. 9876543210)">
+        <div id="recaptcha-container" style="margin:10px 0; display:flex; justify-content:center;"></div>
+        <button class="btn-gold" id="btnSendOtp" style="width:100%; padding:12px;" onclick="sendPhoneOtp()">Send OTP</button>
+      </div>
+
+      <div id="otpStep" style="display:none;">
+        <p style="font-size:11px; color:#facc15; margin-bottom:8px;">Enter 6-digit OTP sent to your mobile</p>
+        <input type="number" id="loginOtp" class="input-box" placeholder="Enter 6-Digit OTP">
+        <button class="btn-gold" id="btnVerifyOtp" style="width:100%; padding:12px; margin-bottom:8px;" onclick="verifyPhoneOtp()">Verify & Login</button>
+        <button type="button" style="background:transparent; border:none; color:#94a3b8; font-size:12px; cursor:pointer;" onclick="resetPhoneStep()">Change Number</button>
+      </div>
     </div>
   </div>
+
 
   <!-- WITHDRAW PROMPT MODAL -->
   <div id="withdrawModal" class="modal-overlay">
@@ -712,37 +730,7 @@
       }, 15000);
     }
 
-    // --- WHEEL MATH MATCHED EXACTLY TO SERVER SECTORS ---
-    // const segs = [];
-    const cols = ["#facc15", "#0f172a", "#facc15", "#0f172a", "#facc15", "#0f172a", "#facc15", "#0f172a"];
-    let spinning = false;
-
-    function initPremiumWheel() { return;
-      const canvas = document.getElementById("wheelCanvas");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const num = segs.length;
-      const arc = (2 * Math.PI) / num;
-      ctx.clearRect(0, 0, 265, 265);
-
-      for (let i = 0; i < num; i++) {
-        const angle = i * arc;
-        ctx.beginPath();
-        ctx.fillStyle = cols[i];
-        ctx.moveTo(132, 132);
-        ctx.arc(132, 132, 126, angle, angle + arc);
-        ctx.lineTo(132, 132);
-        ctx.fill();
-
-        ctx.save();
-        ctx.translate(132, 132);
-        ctx.rotate(angle + arc / 2);
-        ctx.fillStyle = (cols[i] === "#facc15") ? "#000" : "#fff";
-        ctx.font = "bold 13px Inter, sans-serif";
-        ctx.fillText(segs[i], 70, 5);
-        ctx.restore();
-      }
-    }
+    // old yellow wheel cleaned
 
     
 
@@ -784,30 +772,67 @@
 
 
 <!-- Redeem UPI Modal -->
-<div id="redeemModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center;">
-  <div style="background:#161b22; border:1px solid #30363d; border-radius:16px; padding:20px; width:90%; max-width:340px; text-align:center; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
-    <h3 style="color:#f59e0b; margin-bottom:6px; font-size:18px;">Redeem to UPI</h3>
-    <p style="font-size:12px; color:#8b949e; margin-bottom:15px;">1,000 Coins = ₹1 (Weekly Max: 3)</p>
-
-    <div style="text-align:left; margin-bottom:12px;">
-      <label style="font-size:11px; color:#8b949e; text-transform:uppercase; font-weight:bold;">UPI ID</label>
-      <input type="text" id="upiIdInput" placeholder="example@oksbi" style="width:100%; padding:10px; border-radius:8px; border:1px solid #30363d; background:#0d1117; color:#fff; margin-top:4px; font-size:14px; box-sizing:border-box;">
+<!-- ================= MODERN REDEEM MODAL ================= -->
+<div id="redeemModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(2,6,23,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:16px;">
+  <div style="background:linear-gradient(145deg, #1e293b, #0f172a); border:1px solid rgba(250,204,21,0.25); border-radius:22px; padding:22px; width:100%; max-width:360px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.85); color:#fff;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div>
+        <h3 style="font-size:18px; font-weight:800; color:#facc15; margin:0;">Redeem Rewards</h3>
+        <p style="font-size:11px; color:#94a3b8; margin:2px 0 0;">1,000 Coins = ₹1</p>
+      </div>
+      <button type="button" onclick="closeRedeemModal()" style="background:rgba(255,255,255,0.08); border:none; width:30px; height:30px; border-radius:50%; color:#94a3b8; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">&times;</button>
     </div>
 
-    <div style="text-align:left; margin-bottom:15px;">
-      <label style="font-size:11px; color:#8b949e; text-transform:uppercase; font-weight:bold;">Amount</label>
-      <select id="redeemAmountSelect" style="width:100%; padding:10px; border-radius:8px; border:1px solid #30363d; background:#0d1117; color:#fff; margin-top:4px; font-size:14px; box-sizing:border-box;">
+    <!-- Payout Method Tabs -->
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <button type="button" id="tab-phonepe" onclick="setPayoutMethod('PhonePe')" style="flex:1; padding:10px 6px; border-radius:12px; border:1px solid #facc15; background:rgba(250,204,21,0.15); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">PhonePe</button>
+      <button type="button" id="tab-gpay" onclick="setPayoutMethod('GPay')" style="flex:1; padding:10px 6px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(15,23,42,0.6); color:#94a3b8; font-size:11px; font-weight:700; cursor:pointer;">GPay</button>
+      <button type="button" id="tab-paytm" onclick="setPayoutMethod('Paytm')" style="flex:1; padding:10px 6px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(15,23,42,0.6); color:#94a3b8; font-size:11px; font-weight:700; cursor:pointer;">Paytm</button>
+    </div>
+
+    <input type="hidden" id="selectedPayoutMethod" value="PhonePe">
+
+    <!-- Payment Detail Field -->
+    <div style="margin-bottom:12px; text-align:left;">
+      <label id="payoutInputLabel" style="font-size:11px; color:#94a3b8; font-weight:700; text-transform:uppercase;">PhonePe UPI ID / Number</label>
+      <input type="text" id="upiIdInput" placeholder="e.g., 9876543210@ybl or mobile number" style="width:100%; padding:11px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:#0b1329; color:#fff; font-size:13px; margin-top:5px; box-sizing:border-box; outline:none;">
+    </div>
+
+    <!-- Amount Selector -->
+    <div style="margin-bottom:18px; text-align:left;">
+      <label style="font-size:11px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Select Amount</label>
+      <select id="redeemAmountSelect" style="width:100%; padding:11px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:#0b1329; color:#fff; font-size:13px; margin-top:5px; box-sizing:border-box; outline:none;">
         <option value="10000">₹10 (10,000 Coins)</option>
         <option value="20000">₹20 (20,000 Coins)</option>
         <option value="50000">₹50 (50,000 Coins)</option>
       </select>
     </div>
 
-    <button type="button" onclick="submitWithdrawRequest()" style="width:100%; padding:12px; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; border-radius:8px; font-weight:bold; color:#0d1117; font-size:14px; cursor:pointer; margin-bottom:8px;">Submit Request</button>
-    <button type="button" onclick="closeRedeemModal()" style="width:100%; padding:8px; background:transparent; border:none; color:#8b949e; font-size:13px; cursor:pointer;">Cancel</button>
+    <button type="button" onclick="submitWithdrawRequest()" style="width:100%; padding:13px; background:linear-gradient(135deg, #facc15, #f59e0b); border:none; border-radius:12px; font-weight:800; color:#0f172a; font-size:14px; cursor:pointer; box-shadow:0 6px 20px rgba(250,204,21,0.3);">Submit Withdrawal</button>
   </div>
 </div>
-<script src="app.js?v=6"></script>
+
+<!-- ================= MODERN SUCCESS RECEIPT MODAL ================= -->
+<div id="withdrawSuccessModal" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(2,6,23,0.9); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:16px;">
+  <div style="background:linear-gradient(145deg, #1e293b, #0f172a); border:1px solid rgba(34,197,94,0.4); border-radius:24px; padding:24px; width:100%; max-width:340px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.9); color:#fff;">
+    <div style="width:60px; height:60px; border-radius:50%; background:rgba(34,197,94,0.15); border:1px solid #22c55e; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#22c55e; font-size:26px;">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <h3 style="font-size:18px; font-weight:800; margin:0 0 6px;">Request Submitted!</h3>
+    <p style="font-size:12px; color:#94a3b8; margin:0 0 16px;">Your payout request has been queued for verification.</p>
+    
+    <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; margin-bottom:18px; text-align:left; font-size:12px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="color:#94a3b8;">Amount:</span><strong id="receiptAmount" style="color:#facc15;">₹10</strong></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="color:#94a3b8;">Method:</span><strong id="receiptMethod" style="color:#fff;">PhonePe</strong></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="color:#94a3b8;">Destination:</span><strong id="receiptDest" style="color:#fff;">-</strong></div>
+      <div style="display:flex; justify-content:space-between;"><span style="color:#94a3b8;">Weekly Limit:</span><strong id="receiptLimit" style="color:#38bdf8;">1 / 20</strong></div>
+    </div>
+
+    <button type="button" onclick="document.getElementById('withdrawSuccessModal').style.display='none'" style="width:100%; padding:12px; border-radius:12px; border:none; background:#22c55e; color:#0f172a; font-weight:800; font-size:13px; cursor:pointer;">Done</button>
+  </div>
+</div>
+<script src="app.js?v=4"></script>
 
 
 
