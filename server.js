@@ -9,8 +9,8 @@ app.use(cors());
 app.use(express.json());
 
 const DB_FILE = path.join(__dirname, 'database.json');
-const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
-const CHAT_ID = process.env.CHAT_ID || 'YOUR_CHAT_ID_HERE';
+const BOT_TOKEN = process.env.BOT_TOKEN || '8439244872:AAFiAPlZhrf5hG1odhZ25Y6oGbrCtNyaRVY';
+const CHAT_ID = process.env.CHAT_ID || '8954689240';
 
 function readDB() {
   try {
