@@ -468,24 +468,27 @@
 
   <!-- LOGIN MODAL -->
   
+  
   <div id="loginOverlay" class="modal-overlay" style="display:none;">
     <div class="modal-card">
       <div class="brand" style="justify-content:center; margin-bottom:8px;"><i class="fa-solid fa-play-circle"></i> Watch&Earn</div>
-      <p style="font-size:11px; color:#94a3b8; margin-bottom:12px;">Mobile OTP Verification (Anti-Fraud)</p>
+      <p style="font-size:11px; color:#94a3b8; margin-bottom:12px;">Mobile OTP Verification (1 Device = 1 Account)</p>
       
       <div id="phoneStep">
         <input type="tel" id="loginPhone" class="input-box" placeholder="10-Digit Mobile (e.g. 9876543210)">
         <div id="recaptcha-container" style="margin:10px 0; display:flex; justify-content:center;"></div>
-        <button class="btn-gold" id="btnSendOtp" style="width:100%; padding:12px;" onclick="sendPhoneOtp()">Send OTP</button>
+        <button class="btn-gold" id="btnSendOtp" style="width:100%; padding:12px;" onclick="sendPhoneOtp()">Send SMS OTP</button>
       </div>
 
       <div id="otpStep" style="display:none;">
-        <p style="font-size:11px; color:#facc15; margin-bottom:8px;">Enter 6-digit OTP sent to your mobile</p>
+        <p style="font-size:11px; color:#facc15; margin-bottom:8px;">Enter 6-digit OTP sent to your phone</p>
         <input type="number" id="loginOtp" class="input-box" placeholder="Enter 6-Digit OTP">
         <button class="btn-gold" id="btnVerifyOtp" style="width:100%; padding:12px; margin-bottom:8px;" onclick="verifyPhoneOtp()">Verify & Login</button>
         <button type="button" style="background:transparent; border:none; color:#94a3b8; font-size:12px; cursor:pointer;" onclick="resetPhoneStep()">Change Number</button>
       </div>
     </div>
+  </div>
+  
   </div>
 
 
